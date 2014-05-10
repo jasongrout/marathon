@@ -58,8 +58,4 @@ function writelinks(links) {
 }
 
 fs.remove(file);
-casper.run(function() {
-    // echo results in some pretty fashion
-    //var data = links.map(function(row) {return row.join('\t')}).join('\n');
-    this.exit();
-});
+casper.run();
