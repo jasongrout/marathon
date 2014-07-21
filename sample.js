@@ -4,7 +4,7 @@ main_url = "http://www.marathonguide.com/";
 
 var casper = require('casper').create({
     verbose: true,
-    //logLevel: "debug",
+    logLevel: "debug",
     onResourceRequested: function(c, requestData, networkRequest) {
         if (requestData.url.slice(0, main_url.length) !== main_url) {
             networkRequest.abort();
@@ -23,9 +23,9 @@ var interpage_wait = 300;
 //require("utils").dump(casper.cli.args);
 
 function getheader(year) {
-    casper.waitForSelector("table[border='1']", function() {
+    casper.waitForSelector("table[border='1']", function writeHeader() {
         // get headers
-        var headers = casper.evaluate(function() {
+        var headers = casper.evaluate(function getHeaderData() {
             var newlinks = document.querySelectorAll("table[border='1'] tr:nth-of-type(2)");
             newlinks = Array.prototype.map.call(newlinks, function(e) {
                 return Array.prototype.map.call(e.querySelectorAll('th'), function(td) {
@@ -39,8 +39,9 @@ function getheader(year) {
 }
 
 function addtolinks(year, index) {
-    casper.waitForSelector("table[border='1']", function() {
-        var links = casper.evaluate(function() {
+    thenecho("adding links");
+    casper.waitForSelector("table[border='1']", function writeTableData() {
+        var links = casper.evaluate(function getRowData() {
             var newlinks = document.querySelectorAll("table[border='1'] tr");
             newlinks = Array.prototype.map.call(newlinks, function(e) {
                 return Array.prototype.map.call(e.querySelectorAll('td'), function(td) {
@@ -51,6 +52,7 @@ function addtolinks(year, index) {
         });
         writelinks(year, links);
     });
+    thenecho("done adding links");
 }
 
 function range(lowEnd, highEnd) {
@@ -61,6 +63,10 @@ function range(lowEnd, highEnd) {
     return arr;
 }
 
+function thenecho(s) {
+    casper.then(function() {this.echo(s);});
+}
+
 function getraceresults(options) {
     var year = options.year;
     var link = options.link;
@@ -68,27 +74,37 @@ function getraceresults(options) {
     casper.thenOpen(link);
     casper.waitForSelector('select[name="RaceRange"]');
 
-    casper.then(function loopthrough() {
+    casper.then(function getnumpages() {
         var numpages = casper.evaluate(function getnumpages() {
             return document.querySelector('select[name="RaceRange"]').length;
         });
-        casper.echo("Getting "+numpages+" pages");
+        thenecho("Getting "+numpages+" pages");
+        casper.thenEvaluate(function getFirstPage(index) {
+            document.querySelector('select[name="RaceRange"]').selectedIndex = index;
+            document.querySelector('form[name="race"]').submit();
+        }, 1);
+        getheader(year);
         casper.eachThen(range(1,numpages), function forloop(response) {
-//document.querySelector('img[alt="Later Runners"]')
             var i = response.data
-            casper.echo('page '+i);
-            casper.thenEvaluate(function(index) {
-                document.querySelector('select[name="RaceRange"]').selectedIndex = index;
-                document.querySelector('form[name="race"]').submit();
-            }, i);
-            if (i===1) {getheader(year);}
+            thenecho('page '+i);
             addtolinks(year, i);
-            casper.wait(interpage_wait);
-            //casper.echo('going back');
-            casper.thenOpen(link);
-            casper.waitForSelector('select[name="RaceRange"]');
+            casper.then(function() {this.echo("donewaiting");});
+            if(i < numpages-1) {
+                /*
+                casper.then( function gotoNextLink() {
+                    thenecho("getting nextlink");
+                    var nextlink = casper.evaluate(function getNextLink() {
+                        return document.querySelector('a > img[alt="Later Runners"]').parentNode.href;
+                    });
+                    thenecho("Going to "+nextlink);
+                    casper.thenOpen(nextlink);
+                });
+                */
+                casper.then(function () {this.click('img[alt="Later Runners"]');});
+                casper.wait(interpage_wait);
+            }
         });
-        casper.then(function() {casper.echo('********** Finished with year '+year+' at '+link)});
+        thenecho('********** Finished with year '+year+' at '+link);
     });
 };
 
@@ -101,7 +117,7 @@ casper.start(url, function() {
 
     casper.eachThen(years, function(response) {
         getraceresults(response.data);
-        casper.then(function() {console.log("********************MOVING TO NEXT YEAR*************************");});
+        //casper.then(function() {console.log("********************MOVING TO NEXT YEAR*************************");});
     });
 
 });
