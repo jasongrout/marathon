@@ -14,7 +14,7 @@ var casper = require('casper').create({
 });
 
 var url = casper.cli.args[0]
-var file = casper.cli.args[1]
+var race = casper.cli.args[1]
 var fs = require('fs');
 var utils = require('utils');
 //casper.options.waitTimeout = 2000000;
@@ -22,25 +22,24 @@ var interpage_wait = 300;
 
 //require("utils").dump(casper.cli.args);
 
-function addtolinks(year, index) {
-    casper.thenEvaluate(function(index) {
-        document.querySelector('select[name="RaceRange"]').selectedIndex = index;
-        document.querySelector('form[name="race"]').submit();
-    }, index);
+function getheader(year) {
     casper.waitForSelector("table[border='1']", function() {
-        if (index===1) {
-            // get headers
-            var headers = casper.evaluate(function() {
-                var newlinks = document.querySelectorAll("table[border='1'] tr:nth-of-type(2)");
-                newlinks = Array.prototype.map.call(newlinks, function(e) {
-                    return Array.prototype.map.call(e.querySelectorAll('th'), function(td) {
+        // get headers
+        var headers = casper.evaluate(function() {
+            var newlinks = document.querySelectorAll("table[border='1'] tr:nth-of-type(2)");
+            newlinks = Array.prototype.map.call(newlinks, function(e) {
+                return Array.prototype.map.call(e.querySelectorAll('th'), function(td) {
                     return td.textContent.replace('\n', ' '); // don't want newlines
-                    });
                 });
-                return newlinks;
             });
-            writeheaders(year, headers);
-        }
+            return newlinks;
+        });
+        writeheaders(year, headers);
+    });
+}
+
+function addtolinks(year, index) {
+    casper.waitForSelector("table[border='1']", function() {
         var links = casper.evaluate(function() {
             var newlinks = document.querySelectorAll("table[border='1'] tr");
             newlinks = Array.prototype.map.call(newlinks, function(e) {
@@ -75,8 +74,14 @@ function getraceresults(options) {
         });
         casper.echo("Getting "+numpages+" pages");
         casper.eachThen(range(1,numpages), function forloop(response) {
+//document.querySelector('img[alt="Later Runners"]')
             var i = response.data
             casper.echo('page '+i);
+            casper.thenEvaluate(function(index) {
+                document.querySelector('select[name="RaceRange"]').selectedIndex = index;
+                document.querySelector('form[name="race"]').submit();
+            }, i);
+            if (i===1) {getheader(year);}
             addtolinks(year, i);
             casper.wait(interpage_wait);
             //casper.echo('going back');
@@ -102,17 +107,17 @@ casper.start(url, function() {
 });
 
 function writeheaders(year, links) {
-    var data = links.map(function(row) {return 'year'+'\t'+row.join('\t')}).join('\n')+'\n';
-    fs.write(file+year+'.csv', data, 'a'); // 'a'ppend data to file
+    var data = links.map(function(row) {return 'race\tyear\t'+row.join('\t')}).join('\n')+'\n';
+    fs.write(race+'-'+year+'.csv', data, 'a'); // 'a'ppend data to file
 }
-
 
 function writelinks(year, links) {
-    var data = links.map(function(row) {return year+'\t'+row.join('\t')}).join('\n')+'\n';
-    fs.write(file+year+'.csv', data, 'a'); // 'a'ppend data to file
+    var data = links.map(function(row) {return race+'\t'+year+'\t'+row.join('\t')}).join('\n')+'\n';
+    fs.write(race+'-'+year+'.csv', data, 'a'); // 'a'ppend data to file
 }
 
-if (fs.exists(file)) {
+/*if (fs.exists(file)) {
     fs.remove(file);
-}
+}*/
+
 casper.run();
