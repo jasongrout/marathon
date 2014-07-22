@@ -7,14 +7,14 @@ var casper = require('casper').create({
     //logLevel: "debug",
     onResourceRequested: function(c, requestData, networkRequest) {
         if (requestData.url.slice(0, main_url.length) !== main_url) {
+            // ignore iframes that want to be loaded from random other URLs
             networkRequest.abort();
-            //console.log("aborted iframe");
         }
 },
 });
 
-var url = casper.cli.args[0]
-var race = casper.cli.args[1]
+var race = casper.cli.args[0]
+var url = casper.cli.args[1]
 var fs = require('fs');
 var utils = require('utils');
 //casper.options.waitTimeout = 2000000;
