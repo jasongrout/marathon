@@ -22,6 +22,10 @@ var interpage_wait = 300;
 
 //require("utils").dump(casper.cli.args);
 
+function thenEcho(s) {
+    casper.then(function() {this.echo(s);});
+}
+
 function getheader(year) {
     casper.waitForSelector("table[border='1']", function() {
         // get headers
@@ -72,11 +76,11 @@ function getraceresults(options) {
         var numpages = casper.evaluate(function getnumpages() {
             return document.querySelector('select[name="RaceRange"]').length;
         });
-        casper.echo("Getting "+numpages+" pages");
+        thenEcho("Getting "+(numpages-1)+" pages");
         casper.eachThen(range(1,numpages), function forloop(response) {
 //document.querySelector('img[alt="Later Runners"]')
             var i = response.data
-            casper.echo('page '+i);
+            thenEcho('page '+i);
             casper.thenEvaluate(function(index) {
                 document.querySelector('select[name="RaceRange"]').selectedIndex = index;
                 document.querySelector('form[name="race"]').submit();
@@ -84,11 +88,11 @@ function getraceresults(options) {
             if (i===1) {getheader(year);}
             addtolinks(year, i);
             casper.wait(interpage_wait);
-            //casper.echo('going back');
+            //thenEcho('going back');
             casper.thenOpen(link);
             casper.waitForSelector('select[name="RaceRange"]');
         });
-        casper.then(function() {casper.echo('********** Finished with year '+year+' at '+link)});
+        thenEcho('********** Finished with year '+year+' at '+link);
     });
 };
 
