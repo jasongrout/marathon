@@ -23,14 +23,9 @@ Chicago marathon
 3. You can edit the url to page through results, or you can click the next button. You can click on individuals to get more specific timing information.
 
 
-Columns:
+Columns: each marathon in a separate file.
 
 name, gender, age, division bottom, division top, time in minutes, marathon name, year, month, day of marathon
 
 
-make the script pull all the data from different years, given a single marathon page.
-
-each marathon in a separate file.
-
-
-WaltDisney--incomplete
+To get the headers: for i in *.csv; do echo $i '\t' "`head -1 $i`"; done > ../headers.csv

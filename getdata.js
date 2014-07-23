@@ -13,11 +13,12 @@ var casper = require('casper').create({
 },
 });
 
-var race = casper.cli.args[0]
-var url = casper.cli.args[1]
+var race = casper.cli.args[0];
+var url = casper.cli.args[1];
+var startyear = casper.cli.args[2] || 2014;
 var fs = require('fs');
 var utils = require('utils');
-//casper.options.waitTimeout = 2000000;
+casper.options.waitTimeout = 90000;
 var interpage_wait = 300;
 
 //require("utils").dump(casper.cli.args);
@@ -104,8 +105,11 @@ casper.start(url, function() {
     });
 
     casper.eachThen(years, function(response) {
-        getraceresults(response.data);
-        casper.then(function() {console.log("********************MOVING TO NEXT YEAR*************************");});
+        if (parseInt(response.data.year) <= startyear) {
+            getraceresults(response.data);
+        } else {
+            thenEcho("Skipping year "+response.data.year);
+        }
     });
 
 });
