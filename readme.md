@@ -29,3 +29,10 @@ name, gender, age, division bottom, division top, time in minutes, marathon name
 
 
 To get the headers: for i in *.csv; do echo $i '\t' "`head -1 $i`"; done > ../headers.csv
+
+Notes on cleaning up data:
+
+* Apparently there are lots of places where unicode nonbreaking space appears: \xa0 - we should delete these with sed, perhaps
+
+* Some columns names have spaces at the start/end.  We should strip these.
+
